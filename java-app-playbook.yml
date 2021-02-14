@@ -1,0 +1,50 @@
+---
+
+- name: do deploy
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Ensure default-jdk package is present
+      apt:
+        name: default-jdk
+        state: present
+    - name: Install maven
+      apt:
+        name: maven
+        state: present
+    - name: Ensure git package is present
+      apt:
+        name: git
+        state: present
+    - name: Ensure python-lxml package is present
+      apt:
+        name: python-lxml
+        state: present
+    - name: Ensure isset repository
+      git:
+        repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+        version: master
+        dest: /tmp/hello-app
+    - name: java app package
+      command: mvn -f /tmp/hello-app/pom.xml package
+
+- name:
+  hosts: db
+  become: yes
+
+  tasks:
+    - name: Ensure tomcat9 package is present
+      apt:
+        name: tomcat9
+        state: present
+    - name: Ensure working tomcat
+      service:
+        name: tomcat9
+        state: started
+    - name: Copy artefact to prod
+      synchronize:
+        src: /tmp/hello-app/target/hello-1.0.war
+        dest: /var/lib/tomcat9/webapps
+      delegate_to: 10.130.0.7
+---
